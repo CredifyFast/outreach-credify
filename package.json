@@ -1,0 +1,14 @@
+{
+  "name": "outreach-credify",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Email/SMS outreach module for credifyfast.com — behavioral health (HIPAA). Front-end prototype today; backend (Next.js + Prisma) to be built.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "npx --yes serve .",
+    "test": "echo \"No tests yet — add them under ./test, then switch this to: node --test\" && exit 0"
+  }
+}

@@ -1,0 +1,68 @@
+# ─────────────────────────────────────────────────────────────
+# outreach-credify — .gitignore
+# Behavioral-health (HIPAA) app. When in doubt, DO NOT commit it.
+# ─────────────────────────────────────────────────────────────
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Environment & secrets — never commit (HIPAA / credentials)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# Build / framework output (Next.js etc., once it exists)
+.next/
+out/
+dist/
+build/
+
+# Prisma local artifacts
+prisma/*.db
+prisma/*.db-journal
+prisma/migrations/**/dev.db*
+
+# Local database data & dumps — MAY CONTAIN PHI, keep out of git
+# (Schema .sql files like credify_cluster_email_isolated.sql are tracked
+#  on purpose — this only ignores live data/dumps, not schema.)
+*.sqlite
+*.sqlite3
+*.dump
+*.bak
+data/
+dumps/
+
+# Logs — must never contain PHI, and shouldn't be committed regardless
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test / coverage output
+coverage/
+.nyc_output/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Misc scratch
+*.tmp
+.cache/
+.temp/
