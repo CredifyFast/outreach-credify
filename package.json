@@ -10,5 +10,11 @@
   "scripts": {
     "start": "npx --yes serve .",
     "test": "node --test"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.8.0"
   }
 }
