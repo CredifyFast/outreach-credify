@@ -9,6 +9,6 @@
   },
   "scripts": {
     "start": "npx --yes serve .",
-    "test": "echo \"No tests yet — add them under ./test, then switch this to: node --test\" && exit 0"
+    "test": "node --test"
   }
 }
