@@ -101,6 +101,13 @@ Everything inside the browser. There is no other box.
        └────────────┘     └──────────────┘    └──────────────┘
 ```
 
+> ⚠ **Diagram superseded 2026-07-16.** "Express app" should read **Next.js + Prisma**
+> — this module merges into the existing 105-table `credify_unified_schema.sql` rather
+> than standing up its own server. The *shape* (gate → routes → pure domain → audit) is
+> unchanged and still correct. See
+> [ADR-0008](adr/0008-align-with-unified-credify-schema.md) and the schema of record,
+> [database-cluster-email.md](database-cluster-email.md) (ret by Taras).
+
 Note what the gate is: **not middleware you can forget to apply.** See
 [api-design.md](api-design.md#the-gate).
 
@@ -124,7 +131,7 @@ calls — the client already told us what the server must do.
 
 | Choice | Why | Alternatives rejected |
 | --- | --- | --- |
-| Node + Express | The domain logic is already JavaScript. Extracting it to Node means moving functions, not rewriting them. Any other runtime means porting the guard chain by hand — the single highest-risk code in the project | PHP/XAMPP (rejected: hand-porting the guards), Serverless (rejected: scheduled sends and long-running jobs fit poorly). [ADR-0002](adr/0002-node-express-postgres-backend.md) |
+| **Next.js + Prisma** (~~Express~~) | The domain logic is already JavaScript, so extraction is a move rather than a rewrite — and the rest of Credify already runs this stack. [ADR-0002](adr/0002-node-express-postgres-backend.md) chose Express **before we knew a unified schema existed**; [ADR-0008](adr/0008-align-with-unified-credify-schema.md) supersedes it | PHP/XAMPP (rejected: hand-porting the guards), Serverless (rejected: scheduled sends fit poorly), standalone Express (rejected: forks the stack, cannot merge) |
 | PostgreSQL | Relational, mature encryption story, real constraints. Suppression correctness is a uniqueness problem and belongs in the DB | MySQL (fine, but no reason to prefer), Mongo (rejected: this is relational). [ADR-0002](adr/0002-node-express-postgres-backend.md) |
 | Session auth, server-side | Simpler than JWT for a single-tenant app; instant revocation matters when someone is fired | JWT (rejected: revocation) |
 | BAA-gated ESP | Non-negotiable for PHI | [ADR-0007](adr/0007-baa-gated-vendor-selection.md) |

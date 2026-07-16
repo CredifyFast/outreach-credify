@@ -19,7 +19,7 @@ browser.
 The single most important fact about this repo: **there is no backend, and the code
 knows it.** The `api()` function at `index.html:1898` is a stub. It logs to the console,
 writes to `localStorage`, and returns `{ok:true}`. There are zero `fetch` or
-`XMLHttpRequest` calls in the entire codebase. The 36 REST routes the UI "calls" are a
+`XMLHttpRequest` calls in the entire codebase. The 41 REST routes the UI "calls" are a
 design sketch that no server implements.
 
 That is not a criticism. Prototyping the UI first was a defensible way to discover the
@@ -58,7 +58,8 @@ Legend: ✅ verified · 🟡 in progress · ⬜ not started · ⛔ blocked
 | --- | --- | --- |
 | Any server code | ⬜ | Zero files |
 | `package.json` / dependency manifest | ⬜ | Does not exist |
-| Database | ⬜ | No schema, no migrations, no Postgres |
+| Database — **schema designed** | 🟡 | **Isolated 33-table Cluster Email DB, ret by Taras** — [database-cluster-email.md](database-cluster-email.md). Verified on PG 16.14. **⛔ the `.sql` file itself has not been delivered** |
+| Database — running instance | ⬜ | Nothing provisioned |
 | Auth / sessions | ⬜ | `state.currentUserId` is a dropdown, not identity |
 | Real `api()` transport | ⬜ | Stub at `index.html:1898` |
 | Server-side re-validation of send guards | ⬜ | **Security-critical.** See [ADR-0004](adr/0004-server-side-enforcement-of-send-guards.md) |
@@ -152,7 +153,7 @@ parallel — because it is calendar-bound, not effort-bound.
 | Phase | Estimate | Gate to exit |
 | --- | --- | --- |
 | 0 · Repo hygiene | 1–2 days | Manifest, `.gitignore`, junk removed, CI green |
-| 1 · Backend skeleton | 2–3 weeks | Express + Postgres, auth, `api()` speaks HTTP |
+| 1 · Backend skeleton | 2–3 weeks | Next.js + Prisma + Postgres, auth, `api()` speaks HTTP |
 | 2 · Domain + guards server-side | 3–4 weeks | Guard chain enforced server-side, tested |
 | 3 · Compliance hardening | 3–4 weeks | Risk assessment done, BAAs signed, audit log durable |
 | 4 · Deliverability | 2–3 weeks | Real ESP, SPF/DKIM/DMARC, bounce/complaint handling |
@@ -166,9 +167,30 @@ was delayed — see the [backlog](#prioritized-backlog).
 
 ## Database architecture & schema
 
-**Status: ⬜ does not exist.** There is no database. What follows is the *implied* model,
-reverse-engineered from the client state object and the stub's route names. It is input
-to the design in [data-model.md](data-model.md), not a description of a running system.
+**Status: 🟡 designed, not delivered, not running.**
+
+A real schema now exists on paper: an **isolated 33-table + 1-view Cluster Email
+database, ret by Taras** — [database-cluster-email.md](database-cluster-email.md) —
+built against this exact HTML and verified end-to-end on PostgreSQL 16.14. It is designed
+to merge into `credify_unified_schema.sql` (105 tables, 319 indexes, 100 RLS policies)
+via a MERGE MAP header.
+
+**Two caveats before anyone calls this done:**
+
+1. **⛔ The `credify_cluster_email_isolated.sql` file has not been delivered.** It is
+   referenced throughout Taras's guide but is not in OneDrive or anywhere on this
+   machine. Until it arrives, the schema of record is a README describing a file we do
+   not have. This is [backlog #2b](#prioritized-backlog).
+2. **No instance is provisioned.** Nothing is running.
+
+The reviewer's appendix in that doc records what was verified (Taras's seed claims hold,
+including a non-trivial 18-contact opt-out count) and three corrections — one material:
+**§7's "2 transactional, 4 marketing" is wrong; the app seeds 3 and 3**, and that field
+decides whether opt-outs are honored.
+
+What follows is the *implied* model reverse-engineered from the client. It predates the
+discovery of Taras's schema and is now a **design sketch, superseded in convention** by
+[ADR-0008](adr/0008-align-with-unified-credify-schema.md).
 
 Current persistence, in full:
 
@@ -226,8 +248,9 @@ Full field-level treatment in [data-model.md](data-model.md).
 
 | Layer | Technology | Decision |
 | --- | --- | --- |
-| Runtime | Node.js + Express | [ADR-0002](adr/0002-node-express-postgres-backend.md) |
-| Database | PostgreSQL | [ADR-0002](adr/0002-node-express-postgres-backend.md) |
+| Runtime | **Next.js + Prisma** (API at `chrome.credifyfast.com/api`) | [ADR-0008](adr/0008-align-with-unified-credify-schema.md) — supersedes ADR-0002's Express choice |
+| Database | PostgreSQL 16 — **schema of record: [database-cluster-email.md](database-cluster-email.md)**, ret by Taras | [ADR-0008](adr/0008-align-with-unified-credify-schema.md) |
+| Conventions | Quoted CamelCase · TEXT cuid PKs **minted app-side** · `TIMESTAMP(3)` · `organizationId` + RLS | [ADR-0008](adr/0008-align-with-unified-credify-schema.md) |
 | Email delivery | HIPAA-eligible ESP, BAA required | [ADR-0007](adr/0007-baa-gated-vendor-selection.md) |
 | SMS delivery | HIPAA-eligible vendor, BAA required | [ADR-0007](adr/0007-baa-gated-vendor-selection.md) |
 | Auth | Session-based, server-side | [ADR-0002](adr/0002-node-express-postgres-backend.md) |
@@ -245,11 +268,12 @@ trivial to *do* and takes months to *finish*; that asymmetry is exactly why it's
 | --- | --- | --- | --- | --- |
 | **1** | **Start ESP/SMS vendor BAA procurement** | **Calendar-bound, 4–10 weeks of someone else's legal review. It gates every real send. Every day this waits, the launch date moves a day. Nothing else on this list has that property.** | ~4h of forms | Jay / counsel |
 | **2** | HIPAA risk assessment | Legally required before PHI. Its findings change the schema and infra, so doing it after the build means rework. Long tail — start early. | 1–2 wks | Jay / counsel |
+| **2b** | **Get `credify_cluster_email_isolated.sql` from Taras** + confirm `EmailPrefCategory.kind` is 3/3 | **Trivial ask, blocks everything downstream.** The schema of record is currently a README describing a file nobody has. Also confirm the [C-1](database-cluster-email.md#c-1--category-kind-split-is-33-not-24-material) split — if a marketing category is seeded `transactional`, opt-outs are silently ignored | 10 min to ask | Jay → Taras |
 | 3 | Decide PHI-in-outreach boundary | Blocks data model *and* vendor scope. The code already hints at "no PHI in email body" ([ADR-0005](adr/0005-phi-minimization-in-outreach.md)) — ratify or reject it. | 2–3 days | Tech lead + counsel |
 | 4 | Repo hygiene: `.gitignore`, remove `test.v1`, fix duplicate `index.html` | Cheap, and every later commit inherits the mess. Ships together with #5. | 2h | Any dev |
 | 5 | `package.json` + toolchain pin | Nothing can be tested, linted, or CI'd without it. Blocks #6, #7, #8. Ship with #4 as one "repo is real now" PR. | 4h | Any dev |
 | 6 | Extract domain logic from `index.html` | The guard chain and PHI scanner must run server-side. They currently live inside a DOM-coupled file and can't be imported. Blocks #7. | 1 wk | Any dev |
-| 7 | Express skeleton + Postgres + migrations | The backend. Everything downstream depends on it. Can't start before #5, shouldn't start before #3 (schema depends on the PHI boundary). | 2–3 wks | Backend dev |
+| 7 | Next.js API skeleton + Postgres + Prisma migrations ([ADR-0008](adr/0008-align-with-unified-credify-schema.md)) | The backend. Everything downstream depends on it. Can't start before #5, shouldn't start before #3 (schema depends on the PHI boundary). | 2–3 wks | Backend dev |
 | 8 | Server-side guard chain + tests | The security fix. Meaningless without #7; dangerous to launch without. | 2 wks | Backend dev |
 | 9 | Real audit log (append-only, durable) | Compliance requirement. Depends on #7. | 1 wk | Backend dev |
 | 10 | Wire `api()` to HTTP | The one-line-per-route swap the stub was designed for. Trivial once #7 exists. | 2 days | Any dev |

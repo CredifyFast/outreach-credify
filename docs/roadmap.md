@@ -68,13 +68,14 @@ inherits whatever mess we leave here.
 **Estimate:** 2–3 weeks · **Depends on:** Phase 0, and the PHI boundary decision
 ([ADR-0005](adr/0005-phi-minimization-in-outreach.md))
 
-Express + Postgres + auth. No sending yet — the send route stays behind a flag that is
+Next.js + Prisma + Postgres + auth ([ADR-0008](adr/0008-align-with-unified-credify-schema.md)).
+No sending yet — the send route stays behind a flag that is
 **off in every environment**.
 
 | Work | Detail |
 | --- | --- |
-| Express app + the [gate](api-design.md#the-gate) | Mounted above the router, not per-route |
-| Postgres + migrations | Forward-only SQL. Reference data migrated, not fixtured |
+| Next.js API + the [gate](api-design.md#the-gate) | Mounted above the router, not per-route |
+| Postgres + Prisma migrations | Schema of record: [database-cluster-email.md](database-cluster-email.md) (ret by Taras). **Blocked until the `.sql` is delivered** |
 | Authn + sessions | Server-side, revocable |
 | RBAC | Deny by default, incl. Compliance Officer read-only |
 | **Extract domain logic** | Guards, PHI scanner, audience filter → pure modules, no DOM |
@@ -82,7 +83,7 @@ Express + Postgres + auth. No sending yet — the send route stays behind a flag
 | **Kill switch** | Halt all outbound. Build it now, before you need it |
 
 **Extract before you port.** The guard chain currently lives inside a DOM-coupled 4,598-
-line file. Lift it to pure functions *with tests* first, then call it from Express. Trying
+line file. Lift it to pure functions *with tests* first, then call it from the API. Trying
 to do both at once means rewriting the most security-critical code in the project without
 a safety net.
 

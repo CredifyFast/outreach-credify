@@ -54,7 +54,7 @@ region — it's **who will sign a BAA** ([ADR-0007](adr/0007-baa-gated-vendor-se
                     └──────┬───────┘
                            ▼
                     ┌──────────────┐
-                    │ App (Node)   │  Express. Private subnet.
+                    │ App (Node)   │  Next.js. Private subnet.
                     │ :3000        │  No public IP.
                     └──┬────────┬──┘
                        │        │
@@ -113,7 +113,7 @@ PHI ends up in a terminal scrollback, a screenshot, and a Slack thread.
 | --- | --- | --- | --- |
 | 443 | HTTPS | **Public** | The only public port |
 | 80 | HTTP | Public | **301 to 443 only.** Never serves content |
-| 3000 | Node/Express | **Private** | Behind the LB. No public binding |
+| 3000 | Node / Next.js | **Private** | Behind the LB. No public binding |
 | 5432 | Postgres | **Private** | App subnet only. Never public, never `0.0.0.0` |
 | 80/443 | XAMPP Apache (local) | **localhost only** | Dev machine. Not production. See isolation rules |
 

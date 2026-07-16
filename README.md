@@ -40,7 +40,8 @@ sequential checks that stand between an operator and a send they'd regret. See t
 | [docs/README.md](docs/README.md) | Doc index with a read-in-order list |
 | [docs/product-overview.md](docs/product-overview.md) | Vision, personas, glossary, feature inventory, non-goals |
 | [docs/architecture.md](docs/architecture.md) | System shape, tech rationale, request lifecycle |
-| [docs/data-model.md](docs/data-model.md) | Entities, implied schema, indexes, migrations |
+| **[docs/database-cluster-email.md](docs/database-cluster-email.md)** | **The schema of record** (33 tables + 1 view) — *ret by Taras* — plus a reviewer's reconciliation |
+| [docs/data-model.md](docs/data-model.md) | Verified entities; proposed schema (superseded in convention), PHI classification |
 | [docs/api-design.md](docs/api-design.md) | The 41 implied routes, the mandatory validation gate |
 | [docs/security-compliance.md](docs/security-compliance.md) | Threat model, HIPAA posture, go-live checklist |
 | [docs/roadmap.md](docs/roadmap.md) | Phases with exit criteria |
@@ -57,13 +58,15 @@ sequential checks that stand between an operator and a send they'd regret. See t
 | | In use today | Planned |
 | --- | --- | --- |
 | Front-end | Vanilla HTML/CSS/JS, single file, no build | unchanged for now |
-| Persistence | `localStorage` (one key) | PostgreSQL |
-| Backend | **none** | Node.js + Express |
+| Persistence | `localStorage` (one key) | PostgreSQL 16 — schema designed, **`.sql` not yet delivered** |
+| Backend | **none** | **Next.js + Prisma** (`chrome.credifyfast.com/api`) |
 | Email/SMS | **none** (simulated) | HIPAA-eligible ESP + SMS vendor, BAA required |
 | Tests / CI | **none** | Node test runner + GitHub Actions |
 
-Rationale in [ADR-0002](docs/adr/0002-node-express-postgres-backend.md). Everything in
-"Planned" is a decision, not an implementation.
+Rationale in [ADR-0008](docs/adr/0008-align-with-unified-credify-schema.md), which
+supersedes [ADR-0002](docs/adr/0002-node-express-postgres-backend.md)'s Express choice —
+this module merges into an existing 105-table Credify schema rather than inventing its
+own stack. Everything in "Planned" is a decision, not an implementation.
 
 ## Quick start
 
@@ -125,7 +128,7 @@ Full treatment in [project-structure.md](docs/project-structure.md).
 | Phase | Focus | Estimate |
 | --- | --- | --- |
 | 0 | Repo hygiene — manifest, `.gitignore`, remove junk | 1–2 days |
-| 1 | Backend skeleton — Express, Postgres, auth | 2–3 wks |
+| 1 | Backend skeleton — Next.js + Prisma, Postgres, auth | 2–3 wks |
 | 2 | Domain logic + guard chain server-side | 3–4 wks |
 | 3 | Compliance hardening — BAA, audit log, encryption | 3–4 wks |
 | 4 | Deliverability — real ESP, SPF/DKIM/DMARC | 2–3 wks |

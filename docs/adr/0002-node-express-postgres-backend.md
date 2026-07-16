@@ -1,7 +1,25 @@
 # ADR-0002 · Node/Express + PostgreSQL for the backend
 
-**Status:** Accepted
+**Status:** **Partially superseded by [ADR-0008](0008-align-with-unified-credify-schema.md)** (2026-07-16)
 **Date:** 2026-07-16
+
+> **Superseded, and left intact on purpose.** Per
+> [ADR-0001](0001-record-architecture-decisions.md), accepted ADRs are immutable — the
+> wrong reasoning is as valuable as the right reasoning, because it records what the
+> author knew at the time.
+>
+> **What survives:** PostgreSQL, and the core argument that the guard chain is JavaScript
+> and should be *moved* rather than hand-ported.
+>
+> **What was wrong:** Express, plain-SQL migrations, `snake_case`, and `uuid` PKs. This
+> ADR was written from the repository alone, and the repository never mentions that
+> `credify_unified_schema.sql` already exists — **105 tables, Next.js + Prisma, quoted
+> CamelCase, TEXT cuid PKs minted app-side.** The decision recorded below had already
+> been made elsewhere, months earlier.
+>
+> The lesson worth keeping: *the repo is not the whole world.* Every fact here was
+> verified against the code and still reached a wrong conclusion, because the scope of
+> verification was too narrow. See [ADR-0008](0008-align-with-unified-credify-schema.md).
 
 ## Context
 

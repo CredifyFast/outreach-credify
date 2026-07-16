@@ -60,39 +60,37 @@ one click, no auth, no confirmation step, and it must work forever.
 
 ## Route inventory (verified)
 
-All 41 distinct routes the client calls today (trailing slashes normalized). Extracted
-with:
+All 41 distinct routes the client calls today (path params normalized to `{id}`).
 
-```bash
-# 37 routes from literal calls:
-grep -o -E 'api\("(GET|POST|PUT|PATCH|DELETE)","[^"]+"' index.html | sort -u
-
-# + 4 more from two DYNAMIC call sites at index.html:1899-1900, which the
-#   grep above misses because the method is a ternary:
-#     api(t.id ? "PUT" : "POST", "/templates/"     + (t.id||""), t)
-#     api(t.id ? "PUT" : "POST", "/contact-types/" + (t.id||""), t)
-#   → POST/PUT /templates and POST/PUT /contact-types
-```
+> ⚠ **Do not extract these with a naive grep.** The obvious pattern —
+> `grep -o -E 'api\("(METHOD)","[^"]+"'` — captures only the **first string literal** of
+> each path, so every concatenated route comes out truncated:
+> `api("PUT","/contacts/"+c.id+"/preferences",…)` reads as `/contacts/`, silently losing
+> `/preferences`. An earlier version of this table had four wrong or missing routes for
+> exactly this reason. Parse the full argument expression, or cross-check against
+> [database-cluster-email.md](database-cluster-email.md) (ret by Taras), which was
+> derived by reading the code rather than grepping it.
 
 Call-site accounting: 57 textual occurrences of `api(` = 1 function definition
-(`index.html:1898`) + 2 mentions in comments + **54 real call sites** (52 literal,
-2 dynamic).
+(`index.html:1898`) + 2 mentions in comments + **54 real call sites** (52 literal-method,
+2 ternary-method at `index.html:1899-1900`).
 
 ### Contacts & preferences
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `PUT` | `/contacts/{id}/prefs` | Update per-category consent |
-| `POST` | `/contacts/{id}/...` | Contact mutations |
-| `PUT` | `/notify-prefs` | Bulk notification prefs |
-| `DELETE` | `/notify-prefs/{id}` | Clear a pref |
+| `PUT` | `/contacts/{id}` | Contact mutations |
+| `PUT` | `/contacts/{id}/preferences` | Upsert the contact's whole pref set — body `{prefs:{cat_x:bool,…}}` |
+| `POST` | `/contacts/{id}/unsubscribe` | One-click unsub — body `{scope:'marketing'}`; flips all **marketing** categories false |
+| `PUT` | `/notify-prefs` | Upsert — body `{scope,id,channel}`; `scope`: all/type/contact |
+| `DELETE` | `/notify-prefs/{scope}/{id}` | Reset to inherit → delete the row. **Two path params, not one** |
 
 ### Suppression
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/suppressions` | Add email suppression |
-| `DELETE` | `/suppressions/{id}` | Remove |
+| `POST` | `/suppressions` | Add email suppression — normalize `LOWER(TRIM(email))` |
+| `DELETE` | `/suppressions/{email}` | ⚠ Param is the **URL-encoded email**, not an id (`encodeURIComponent`, `index.html:3376`) |
 | `POST` | `/sms-suppressions` | Add SMS suppression (STOP) |
 | `DELETE` | `/sms-suppressions/{id}` | Remove |
 | `PUT` | `/sms-stop-reply` | STOP auto-reply text |
@@ -122,7 +120,8 @@ Call-site accounting: 57 textual occurrences of `api(` = 1 function definition
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `POST` | `/segments` · `PUT` `/segments/{id}` · `DELETE` `/segments/{id}` | Saved audiences (**UI orphaned**) |
-| `POST` | `/triggers` · `POST` `/triggers/{id}` · `PUT` `/triggers/{id}` · `DELETE` `/triggers/{id}` | Event sends (**UI disabled**) |
+| `POST` | `/triggers` · `PUT` `/triggers/{id}` · `DELETE` `/triggers/{id}` | Event sends (4 seeded triggers, 8 steps; "+ New Trigger" **disabled**) |
+| `POST` | `/triggers/{id}/activate` | Activate — body `{enrolled,steps,goals}`. ⚠ Unsaved triggers post to `/triggers/**draft**/activate` (`index.html:3900`) — reject or special-case it |
 
 ### Settings
 
@@ -149,9 +148,14 @@ must be written **server-side, inside the same transaction as the action they de
 Keep the route for client-observed UI events if you like, but the server must not depend
 on it. See [data-model.md](data-model.md).
 
-Two routes are inconsistent with the rest and should be fixed during the port:
-`POST /triggers/{id}` (should be `PUT`), and `PUT /notify-prefs` alongside
-`PUT /contacts/{id}/prefs` (two paths, one concept — keep the nested one).
+One inconsistency worth fixing during the port: `PUT /notify-prefs` sits alongside
+`PUT /contacts/{id}/preferences` — two paths, one concept. Keep the nested one.
+
+> **Corrected 2026-07-16.** An earlier version of this doc called `POST /triggers/{id}` a
+> design bug that "should be `PUT`". That route does not exist — it is
+> `POST /triggers/{id}/activate`, a legitimate action route. The error came from the
+> extraction regex below truncating concatenated paths. Caught by reconciling against
+> [database-cluster-email.md](database-cluster-email.md) (ret by Taras).
 
 ## The gate
 

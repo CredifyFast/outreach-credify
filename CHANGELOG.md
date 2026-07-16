@@ -15,6 +15,65 @@ the early history has no changelog and the lineage block caps at 10 entries.
 
 ### Added
 
+- **2026-07-16** — [docs/database-cluster-email.md](docs/database-cluster-email.md):
+  Cluster Email isolated database guide, **ret by Taras** — 33 tables + 1 view, verified
+  on PostgreSQL 16.14, built to merge into `credify_unified_schema.sql`. Added verbatim
+  with a provenance header and a reviewer's reconciliation appendix.
+- **2026-07-16** — [ADR-0008](docs/adr/0008-align-with-unified-credify-schema.md): adopt
+  the unified Credify schema's stack and conventions (Next.js + Prisma, quoted CamelCase,
+  TEXT cuid PKs minted app-side, `TIMESTAMP(3)`, `organizationId` + RLS).
+
+### Fixed
+
+- **2026-07-16** — **Route inventory corrections** in
+  [api-design.md](docs/api-design.md). The extraction regex captured only the first
+  string literal of each path, truncating every concatenated route. Corrected against
+  Taras's endpoint map and re-verified:
+  - `PUT /contacts/{id}/prefs` → **`/contacts/{id}/preferences`**
+  - `DELETE /suppressions/{id}` → **`/suppressions/{url-encoded email}`**
+  - `DELETE /notify-prefs/{id}` → **`/notify-prefs/{scope}/{id}`**
+  - Added missing `POST /contacts/{id}/unsubscribe` and `POST /triggers/{id}/activate`
+  - **Retracted a false finding:** `POST /triggers/{id}` was called a design bug that
+    "should be `PUT`". No such route exists — it is `/triggers/{id}/activate`, a
+    legitimate action route.
+- **2026-07-16** — [data-model.md](docs/data-model.md): seed counts corrected — **4**
+  email templates (was 3); added triggers (4, 8 steps), contacts (36), and the
+  **3 transactional / 3 marketing** category split.
+- **2026-07-16** — [project-status.md](docs/project-status.md): exec summary said 36 REST
+  routes; actual is 41. Database status ⬜ → 🟡 (designed, not delivered). Stack table
+  corrected to Next.js + Prisma.
+
+### Changed
+
+- **2026-07-16** — [ADR-0002](docs/adr/0002-node-express-postgres-backend.md) marked
+  **partially superseded** by ADR-0008. Left intact per
+  [ADR-0001](docs/adr/0001-record-architecture-decisions.md) (accepted ADRs are
+  immutable). PostgreSQL and the guard-chain argument survive; Express, plain-SQL
+  migrations, `snake_case`, and `uuid` PKs do not — the repo never mentioned that a
+  105-table unified schema already existed.
+- **2026-07-16** — [data-model.md](docs/data-model.md) demoted to a design sketch;
+  schema of record is now `database-cluster-email.md`. Its PHI classification
+  (`is_phi` / `mergeable`) remains the only such design and is carried into ADR-0008 as
+  a merge condition.
+
+### Known issues (new)
+
+- **⛔ `credify_cluster_email_isolated.sql` has not been delivered.** Taras's guide
+  documents it throughout; the file is not in OneDrive or anywhere on this machine.
+  Nothing in its §1 quick start can run. Backlog #2b.
+- **⚠ Category `kind` split discrepancy.** The guide's §7 states "2 transactional, 4
+  marketing"; `index.html` seeds **3 and 3**. That field decides whether opt-outs are
+  honored — if a marketing category is seeded `transactional`, opted-out contacts receive
+  marketing mail (fail-open, P1). Verify against the SQL when it arrives. See
+  [C-1](docs/database-cluster-email.md#c-1--category-kind-split-is-33-not-24-material).
+- **⚠ `state.trigExcluded` holds `Set` objects and is in `PERSIST_KEYS`.**
+  `JSON.stringify(new Set())` → `{}`, so trigger exclusions are lost on reload and
+  `.has()` throws after hydration. Latent — masked because "+ New Trigger" is disabled.
+- **No endpoint feeds `EmailTriggerExclusion`.** The guide lists
+  `POST /triggers/:id/exclusions`; that route does not exist in the HTML (0 occurrences).
+
+### Added (earlier)
+
 - **2026-07-16** — Full project documentation set: [README](README.md) hub,
   [docs/](docs/) (status, product overview, architecture, data model, API design,
   security & compliance, roadmap, project structure, engineering standards, operations

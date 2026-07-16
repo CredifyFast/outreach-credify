@@ -3,12 +3,32 @@
 > **Audience:** engineers designing the database. **Purpose:** the entities the prototype
 > already models, and the relational schema they imply.
 
-> ## ⚠ There is no database. None of this schema exists.
+> ## ⚠ SUPERSEDED IN PART — read this first
 >
-> The **Entities** section is verified — reverse-engineered from `state` at
-> `index.html:1907` and the 18 `SEED_*` constants. The **Schema** section is a **proposal
-> with zero lines of SQL written**. No migration has ever run. Do not read the `CREATE
-> TABLE` blocks as documentation of a running system.
+> **This doc's proposed schema is a design sketch, not the plan of record.** It was
+> written on 2026-07-16 without knowledge that a database already existed.
+>
+> **The schema of record is [database-cluster-email.md](database-cluster-email.md)** —
+> an isolated 33-table Cluster Email DB **ret by Taras**, built to merge into
+> `credify_unified_schema.sql` (**105 tables, 319 indexes, 100 RLS policies**, verified on
+> PostgreSQL 16.14).
+>
+> Its conventions win, and they differ from this document's on nearly every axis —
+> quoted CamelCase not `snake_case`, TEXT cuid PKs minted **app-side** not
+> `gen_random_uuid()`, `TIMESTAMP(3)` not `timestamptz`, Prisma not hand-written SQL,
+> multi-tenant `organizationId` + RLS not single-tenant. See
+> [ADR-0008](adr/0008-align-with-unified-credify-schema.md).
+>
+> **What is still worth reading here:**
+> - The **Entities** section — verified against `index.html`, and unaffected.
+> - **`form_fields.is_phi` / `mergeable`** — a PHI classification that **neither** the
+>   isolated nor the unified schema has, and that this module needs
+>   ([ADR-0005](adr/0005-phi-minimization-in-outreach.md)).
+> - The reasoning on **suppression keying on address, not `contact_id`** — which Taras's
+>   schema independently agrees with (`UNIQUE (organizationId, email)`, normalized
+>   `LOWER(TRIM(email))`).
+>
+> Read the `CREATE TABLE` blocks below as an argument, not an instruction.
 
 ## Current persistence, in full
 
@@ -33,9 +53,11 @@ Counted programmatically from the seed constants.
 | Stages | `SEED_STAGES` | **6** | `New Lead → Contacted → Intake Scheduled → In Treatment → Discharged → Closed` |
 | Lead sources | `SEED_LEAD_SOURCES` | **8** | Website Form, Google Ads, Psychology Today, Physician Referral, … |
 | Lead types | `SEED_LEAD_TYPES` | **6** | Self-Pay, Commercial, Medicaid, EAP, Sliding-Scale, Grant-Funded |
-| Categories | `SEED_CATEGORIES` | **6** | Each `transactional` or `marketing` — drives consent |
+| Categories | `SEED_CATEGORIES` | **6** — **3 transactional / 3 marketing** | `kind` drives consent: marketing honors opt-outs, transactional ignores them. Transactional: `cat_appt`, `cat_billing`, `cat_care`. Marketing: `cat_marketing`, `cat_surveys`, `cat_events`. ⚠ [database-cluster-email.md](database-cluster-email.md) §7 miscounts this as 2/4 — see [C-1](database-cluster-email.md#c-1--category-kind-split-is-33-not-24-material) |
 | Reps | `REPS` | **5** | Name + title |
-| Templates | `SEED_TEMPLATES` / `SEED_SMS_TEMPLATES` | 3 / 3 | `kind: text \| html` |
+| Templates | `SEED_TEMPLATES` / `SEED_SMS_TEMPLATES` | **4** / 3 | `kind: text \| html`. Email: Intro / Welcome · Balance Reminder · Partner Check-In · Welcome (HTML, bilingual) |
+| Triggers | `state.triggers` (`index.html:1969`) | 4 (8 steps) | Step ids (`s1,s2…`) **repeat across triggers** — key on `(triggerId, stepKey)` |
+| Contacts | `makeContacts()` | 36 (`c1…c36`) | 100-key `formData` (5 forms × 20 fields); 18 opted out of ≥1 marketing category |
 
 **`ssn` and `signature` are first-class field types.** The form engine is built to
 capture a Social Security Number and a patient signature, and any captured field is

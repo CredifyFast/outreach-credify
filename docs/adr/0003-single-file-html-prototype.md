@@ -90,6 +90,6 @@ today. What changes in Phase 1 is that the domain logic below the seam gets extr
 [project-structure.md](../project-structure.md)).
 
 **Extract with tests before porting.** Lift a function, write its tests, prove it behaves
-identically, then call it from Express. Doing extraction and rewriting in one motion means
+identically, then call it from the API. Doing extraction and rewriting in one motion means
 rewriting the guard chain without a safety net — see
 [roadmap Phase 1](../roadmap.md#phase-1--backend-skeleton).

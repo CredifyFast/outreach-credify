@@ -17,7 +17,7 @@
 
 | Service | Purpose | Failure impact | Recovery |
 | --- | --- | --- | --- |
-| **App (Node/Express)** | The API + static | Total outage. Nothing sends | Redeploy previous image |
+| **App (Node / Next.js)** | The API + static | Total outage. Nothing sends | Redeploy previous image |
 | **Postgres** | All data incl. audit | Total outage + **data risk** | Restore from snapshot. See [DR](#disaster-recovery) |
 | **Queue** | Scheduled + outbound | Sends stall. **Scheduled sends may miss their window** | Drain and replay. Idempotency prevents duplicates |
 | **ESP** | Email delivery | No email. Reputation risk if retried badly | Backoff. Do not hammer |

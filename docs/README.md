@@ -14,12 +14,17 @@ than anyone but the maintainer.
    Read the glossary; this domain has words that mean specific things.
 3. [architecture.md](architecture.md) — how the prototype is shaped and where the
    backend will attach.
-4. [data-model.md](data-model.md) — the entities, and the schema they imply.
-5. [api-design.md](api-design.md) — the 41 routes the stub already names, and the
+4. **[database-cluster-email.md](database-cluster-email.md)** — **the schema of record**
+   (33 tables + 1 view, **ret by Taras**), plus a reviewer's appendix reconciling it
+   against this doc set. Read it before `data-model.md`.
+5. [data-model.md](data-model.md) — the entities (verified), and a proposed schema now
+   **superseded in convention** by the above. Still the only place PHI classification is
+   designed.
+6. [api-design.md](api-design.md) — the 41 routes the stub already names, and the
    validation gate every one of them must pass through.
-6. [security-compliance.md](security-compliance.md) — the threat model and the go-live
+7. [security-compliance.md](security-compliance.md) — the threat model and the go-live
    checklist. **Required reading before you touch sending, PHI, or the audit log.**
-7. [roadmap.md](roadmap.md) — phases and their exit criteria.
+8. [roadmap.md](roadmap.md) — phases and their exit criteria.
 
 Then, as needed:
 
@@ -46,6 +51,7 @@ says so in a banner at the top. Trust the banners.
 | [0005](adr/0005-phi-minimization-in-outreach.md) | PHI minimization in outbound messages | Proposed |
 | [0006](adr/0006-localstorage-persistence-is-prototype-only.md) | localStorage is prototype-only | Accepted |
 | [0007](adr/0007-baa-gated-vendor-selection.md) | BAA-gated vendor selection | Accepted |
+| [0008](adr/0008-align-with-unified-credify-schema.md) | Align with the unified Credify schema (Prisma / Next.js) | Accepted — **supersedes 0002's stack choice** |
 
 New decisions get a new file. Accepted ADRs are immutable — supersede, don't edit. See
 [ADR-0001](adr/0001-record-architecture-decisions.md).
