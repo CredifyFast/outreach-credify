@@ -1,0 +1,560 @@
+// Generated from the live credify_cluster_email catalog (stand-in for
+// `prisma db pull`, whose engine is network-blocked in this sandbox).
+// Confirm with one `npx prisma db pull` in a networked env before relying on it.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeliverabilityType {
+  delivered
+  soft_bounce
+  hard_bounce
+  complaint
+}
+
+enum EmailJobMode {
+  immediate
+  scheduled
+}
+
+enum EmailJobStatus {
+  queued
+  sent
+  canceled
+}
+
+enum PrefCategoryKind {
+  transactional
+  marketing
+}
+
+enum TemplateKind {
+  text
+  html
+}
+
+model ActionType {
+  id             String @id
+  organizationId String
+  label          String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact[]
+}
+
+model Contact {
+  id                 String @id
+  organizationId     String
+  firstName          String @default("")
+  lastName           String @default("")
+  name               String
+  email              String
+  phone              String?
+  street             String?
+  city               String?
+  zip                String?
+  tz                 String?
+  lang               String @default("en")
+  typeId             String?
+  leadSourceId       String?
+  leadTypeId         String?
+  stageId            String?
+  statusId           String?
+  bucketId           String?
+  distributionRuleId String?
+  assignedRepId      String?
+  redistributedById  String?
+  redistributedAt    DateTime?
+  touchRuleId        String?
+  touchStep          Int @default(0)
+  nextTouchDueAt     DateTime?
+  lastStageActionId  String?
+  opens              Int @default(0)
+  sends              Int @default(0)
+  clicks             Int @default(0)
+  openHistory        Json @default("[]")
+  peakHour           Int?
+  softBounces        Int @default(0)
+  bounceStatus       String @default("ok")
+  lastBounceAt       DateTime?
+  complainedAt       DateTime?
+  formData           Json @default("{}")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now())
+  assignedRep        User? @relation(fields: [assignedRepId], references: [id], onDelete: SetNull)
+  bucket             DistributionList? @relation(fields: [bucketId], references: [id], onDelete: SetNull)
+  distributionRule   DistributionRule? @relation("Contact_distributionRule", fields: [distributionRuleId], references: [id], onDelete: SetNull)
+  lastStageAction    StageAction? @relation(fields: [lastStageActionId], references: [id], onDelete: SetNull)
+  leadSource         LeadSource? @relation(fields: [leadSourceId], references: [id], onDelete: SetNull)
+  leadType           LeadType? @relation(fields: [leadTypeId], references: [id], onDelete: SetNull)
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  redistributedBy    DistributionRule? @relation("Contact_redistributedBy", fields: [redistributedById], references: [id], onDelete: SetNull)
+  stage              PipelineStage? @relation(fields: [stageId], references: [id], onDelete: SetNull)
+  status             ActionType? @relation(fields: [statusId], references: [id], onDelete: SetNull)
+  touchRule          TouchRule? @relation(fields: [touchRuleId], references: [id], onDelete: SetNull)
+  type               ContactType? @relation(fields: [typeId], references: [id], onDelete: SetNull)
+  contactCrmEvent    ContactCrmEvent[]
+  contactEmailPref   ContactEmailPref[]
+  emailJobRecipient  EmailJobRecipient[]
+  emailTriggerExclusion EmailTriggerExclusion[]
+
+  @@index([email])
+  @@index([organizationId, assignedRepId])
+  @@index([organizationId])
+  @@index([organizationId, statusId])
+  @@index([organizationId, typeId])
+}
+
+model ContactCrmEvent {
+  id             String @id
+  organizationId String
+  contactId      String
+  type           String
+  at             DateTime @default(now())
+  meta           Json @default("{}")
+  contact        Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, contactId, at])
+}
+
+model ContactEmailPref {
+  id             String @id
+  organizationId String
+  contactId      String
+  categoryId     String
+  optedIn        Boolean @default(true)
+  updatedAt      DateTime @default(now())
+  category       EmailPrefCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  contact        Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, categoryId])
+  @@index([organizationId, categoryId, optedIn])
+}
+
+model ContactType {
+  id             String @id
+  organizationId String
+  label          String
+  system         Boolean @default(false)
+  sortOrder      Int @default(0)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact[]
+}
+
+model DeliverabilityEvent {
+  id             String @id
+  organizationId String
+  contactId      String?
+  name           String?
+  email          String?
+  type           DeliverabilityType
+  at             DateTime @default(now())
+  action         String?
+  suppressed     Boolean @default(false)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, at])
+}
+
+model DistributionList {
+  id             String @id
+  organizationId String
+  label          String
+  kind           String @default("bucket")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact[]
+}
+
+model DistributionRule {
+  id             String @id
+  organizationId String
+  label          String
+  kind           String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact[] @relation("Contact_distributionRule")
+  contact_redistributedBy Contact[] @relation("Contact_redistributedBy")
+}
+
+model EmailAuditLog {
+  id             String @id
+  organizationId String
+  type           String
+  at             DateTime @default(now())
+  jobId          String?
+  contactId      String?
+  name           String?
+  email          String?
+  templateName   String?
+  url            String?
+  meta           Json?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, at])
+  @@index([organizationId, jobId])
+  @@index([organizationId, type])
+}
+
+model EmailClickEvent {
+  id             String @id
+  organizationId String
+  jobId          String?
+  contactId      String?
+  name           String?
+  email          String?
+  url            String
+  at             DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, contactId])
+  @@index([organizationId, jobId])
+}
+
+model EmailJob {
+  id             String @id
+  organizationId String
+  createdAt      DateTime @default(now())
+  templateId     String?
+  templateName   String @default("")
+  categoryId     String?
+  kind           TemplateKind @default(text)
+  bilingual      Boolean @default(false)
+  typeIds        Json @default("[]")
+  mode           EmailJobMode @default(immediate)
+  scheduledAt    DateTime?
+  tracking       Boolean @default(true)
+  status         EmailJobStatus @default(queued)
+  source         String @default("cluster")
+  triggerId      String?
+  note           String @default("")
+  footer         Json?
+  portalNotice   Boolean @default(false)
+  sentBy         String @default("")
+  category       EmailPrefCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template       EmailTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  trigger        EmailTrigger? @relation(fields: [triggerId], references: [id], onDelete: SetNull)
+  emailJobRecipient EmailJobRecipient[]
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, status])
+}
+
+model EmailJobRecipient {
+  id                  String @id
+  organizationId      String
+  jobId               String
+  contactId           String
+  name                String @default("")
+  email               String
+  typeId              String?
+  lang                String @default("en")
+  sendAt              DateTime?
+  trackId             String?
+  opened              Boolean @default(false)
+  openedAt            DateTime?
+  clicked             Boolean @default(false)
+  clickedUrl          String?
+  clickedAt           DateTime?
+  subject             String @default("")
+  body                String @default("")
+  bodyHtml            String?
+  unsubToken          String?
+  unsubUrl            String?
+  listUnsubscribe     String?
+  listUnsubscribePost String?
+  providerMessageId   String?
+  sendStatus          String?
+  sentAt              DateTime?
+  contact             Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  job                 EmailJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, contactId])
+  @@index([organizationId, sendAt])
+  @@index([trackId])
+}
+
+model EmailNotifLog {
+  id             String @id
+  organizationId String
+  at             DateTime @default(now())
+  contactId      String?
+  channel        String?
+  title          String?
+  body           String?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model EmailPrefCategory {
+  id             String @id
+  organizationId String
+  label          String
+  kind           PrefCategoryKind @default(marketing)
+  description    String?
+  sortOrder      Int @default(0)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contactEmailPref ContactEmailPref[]
+  emailJob       EmailJob[]
+  emailTemplate  EmailTemplate[]
+  smsTemplate    SmsTemplate[]
+}
+
+model EmailSignature {
+  id             String @id
+  organizationId String
+  name           String
+  title          String?
+  phone          String?
+  email          String?
+  org            String?
+  body           String @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model EmailSuppression {
+  id             String @id
+  organizationId String
+  email          String
+  reason         String @default("manual")
+  at             DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
+}
+
+model EmailTemplate {
+  id             String @id
+  organizationId String
+  name           String
+  categoryId     String?
+  kind           TemplateKind @default(text)
+  bilingual      Boolean @default(false)
+  subject        String @default("")
+  body           String @default("")
+  blocks         Json?
+  es             Json?
+  attachment     Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+  category       EmailPrefCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  emailJob       EmailJob[]
+  emailTriggerStep EmailTriggerStep[]
+
+  @@index([organizationId])
+}
+
+model EmailTrigger {
+  id                 String @id
+  organizationId     String
+  name               String
+  enabled            Boolean @default(true)
+  entry              Json @default("{}")
+  segmentId          String?
+  tracking           Boolean @default(true)
+  goals              Json @default("[]")
+  freqCapOverride    Boolean @default(false)
+  quietHoursOverride Boolean @default(false)
+  branch             Json @default("{"enabled": false}")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now())
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  segment            Segment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  emailJob           EmailJob[]
+  emailTriggerExclusion EmailTriggerExclusion[]
+  emailTriggerStep   EmailTriggerStep[]
+}
+
+model EmailTriggerExclusion {
+  id             String @id
+  organizationId String
+  triggerId      String
+  contactId      String
+  at             DateTime @default(now())
+  contact        Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  trigger        EmailTrigger @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+
+  @@unique([triggerId, contactId])
+}
+
+model EmailTriggerStep {
+  id             String @id
+  organizationId String
+  triggerId      String
+  stepKey        String
+  sortOrder      Int @default(0)
+  templateId     String?
+  delayN         Int @default(0)
+  delayUnit      String @default("days")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template       EmailTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  trigger        EmailTrigger @relation(fields: [triggerId], references: [id], onDelete: Cascade)
+
+  @@unique([triggerId, stepKey])
+}
+
+model Form {
+  id             String @id
+  organizationId String
+  slug           String
+  name           String
+  category       String?
+  fields         Json @default("[]")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, slug])
+}
+
+model LeadSource {
+  id             String @id
+  organizationId String
+  label          String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact[]
+}
+
+model LeadType {
+  id             String @id
+  organizationId String
+  label          String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact[]
+}
+
+model NotifyPref {
+  id             String @id
+  organizationId String
+  scope          String
+  refId          String?
+  channel        String @default("off")
+  updatedAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, scope])
+}
+
+model Organization {
+  id        String @id
+  name      String
+  createdAt DateTime @default(now())
+  actionType ActionType[]
+  contact   Contact[]
+  contactCrmEvent ContactCrmEvent[]
+  contactEmailPref ContactEmailPref[]
+  contactType ContactType[]
+  deliverabilityEvent DeliverabilityEvent[]
+  distributionList DistributionList[]
+  distributionRule DistributionRule[]
+  emailAuditLog EmailAuditLog[]
+  emailClickEvent EmailClickEvent[]
+  emailJob  EmailJob[]
+  emailJobRecipient EmailJobRecipient[]
+  emailNotifLog EmailNotifLog[]
+  emailPrefCategory EmailPrefCategory[]
+  emailSignature EmailSignature[]
+  emailSuppression EmailSuppression[]
+  emailTemplate EmailTemplate[]
+  emailTrigger EmailTrigger[]
+  emailTriggerExclusion EmailTriggerExclusion[]
+  emailTriggerStep EmailTriggerStep[]
+  form      Form[]
+  leadSource LeadSource[]
+  leadType  LeadType[]
+  notifyPref NotifyPref[]
+  pipelineStage PipelineStage[]
+  segment   Segment[]
+  setting   Setting[]
+  smsSuppression SmsSuppression[]
+  smsTemplate SmsTemplate[]
+  stageAction StageAction[]
+  touchRule TouchRule[]
+  user      User[]
+}
+
+model PipelineStage {
+  id             String @id
+  organizationId String
+  label          String
+  sortOrder      Int @default(0)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact[]
+}
+
+model Segment {
+  id             String @id
+  organizationId String
+  name           String
+  groups         Json @default("[]")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  emailTrigger   EmailTrigger[]
+}
+
+model Setting {
+  organizationId String @id
+  key            String @id
+  value          Json
+  updatedAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model SmsSuppression {
+  id             String @id
+  organizationId String
+  contact        String
+  name           String?
+  phone          String?
+  at             DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model SmsTemplate {
+  id             String @id
+  organizationId String
+  name           String
+  categoryId     String?
+  body           String @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+  category       EmailPrefCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model StageAction {
+  id             String @id
+  organizationId String
+  label          String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact[]
+}
+
+model TouchRule {
+  id             String @id
+  organizationId String
+  label          String
+  steps          Int @default(1)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact[]
+}
+
+model User {
+  id             String @id
+  organizationId String
+  name           String
+  title          String?
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact[]
+}
+
