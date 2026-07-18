@@ -20,5 +20,5 @@ jobs:
           REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
           REMOTE_USER: ${{ secrets.REMOTE_USER }}
           REMOTE_PORT: '2222'  # Tells the rsync client to connect on port 2222 instead of 22
-          TARGET: "/var/www/my-app"  # Your target directory on the server
+          TARGET: "/var/www/outreach.credifyfast.com"  # Your target directory on the server
           EXCLUDE: "/.git/, /.github/, /test/, /docs/, /CONTRIBUTING.md, /CHANGELOG.md, /package.json"
