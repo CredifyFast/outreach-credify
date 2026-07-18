@@ -1,0 +1,24 @@
+name: Deploy Outreach Credify
+
+on:
+  push:
+    branches:
+      - main  # Triggers deployment when you push to the 'main' branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server via SSH
+        uses: easingthemes/ssh-deploy@v6
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+          TARGET: "/var/www/my-app"  # CHANGE THIS: Point this to your server's folder
+          # Exclude git files, local tests, documentation, and metadata from the live server
+          EXCLUDE: "/.git/, /.github/, /test/, /docs/, /CONTRIBUTING.md, /CHANGELOG.md, /package.json"
