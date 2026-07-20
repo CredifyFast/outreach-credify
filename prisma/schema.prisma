@@ -1,0 +1,20 @@
+// STARTER ONLY — replace this file's entire contents with the output of
+// introspection against the real database, committed unedited:
+//
+//   (on the server, in a folder containing this file, DATABASE_URL set —
+//    remember Postgres listens on port 5433)
+//   npx prisma db pull
+//
+// The schema is owned upstream (see CLAUDE.md): never run `prisma migrate`
+// or `prisma db push` against this database, and never hand-edit models.
+// If this file still has zero models, the build cannot start — see the
+// "Stack ruling" section of CLAUDE.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

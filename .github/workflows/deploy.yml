@@ -3,12 +3,26 @@ name: Deploy Outreach Credify
 on:
   push:
     branches:
-      - main  # Triggers deployment when you push to the 'main' branch
+      - main
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run tests
+        run: npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -19,6 +33,38 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
           REMOTE_USER: ${{ secrets.REMOTE_USER }}
-          REMOTE_PORT: '2222'  # Tells the rsync client to connect on port 2222 instead of 22
-          TARGET: "/var/www/outreach.credifyfast.com"  # Your target directory on the server
-          EXCLUDE: "/.git/, /.github/, /test/, /docs/, /CONTRIBUTING.md, /CHANGELOG.md, /package.json"
+          REMOTE_PORT: '2222'
+          TARGET: "/var/www/outreach.credifyfast.com"
+          # package.json/src/prisma/scripts now sync (they were excluded before);
+          # docs-archive stays off the server; node_modules is built server-side.
+          EXCLUDE: "/.git/, /.github/, /test/, /docs-archive/, /CONTRIBUTING.md, /CHANGELOG.md, /node_modules/, /.claude/"
+          SCRIPT_AFTER: |
+            cd /var/www/outreach.credifyfast.com
+            npm install --omit=dev --no-audit --no-fund
+            npx prisma generate
+            pm2 restart outreach-credify --update-env || ENV_FILE=/etc/credify/outreach.env pm2 start src/server.js --name outreach-credify
+            pm2 save
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify live deployment
+        env:
+          VERIFY_URL: https://outreach.credifyfast.com
+          VERIFY_USER: ${{ secrets.VERIFY_USER }}
+          VERIFY_PASS: ${{ secrets.VERIFY_PASS }}
+        run: |
+          if [ -f scripts/verify-deploy.mjs ]; then
+            node scripts/verify-deploy.mjs
+          else
+            echo "scripts/verify-deploy.mjs not present yet — skipping"
+          fi

@@ -1,14 +1,20 @@
 {
   "name": "outreach-credify",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Email/SMS outreach module for credifyfast.com — behavioral health (HIPAA). Front-end prototype today; backend (Next.js + Prisma) to be built.",
+  "description": "Cluster Email module for credifyfast.com — Express/Prisma persistence layer for the single-file front-end. Read CLAUDE.md first.",
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=20"
   },
   "scripts": {
-    "start": "npx --yes serve .",
+    "start": "node src/server.js",
     "test": "node --test"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "prisma": "^6.5.0"
   }
 }
